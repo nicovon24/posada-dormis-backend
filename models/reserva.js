@@ -5,8 +5,6 @@ import { Huesped } from "./huesped.js";
 import { Usuario } from "./usuario.js";
 import { Habitacion } from "./habitacion.js";
 
-
-
 export const Reserva = sequelize.define(
 	"Reserva",
 	{

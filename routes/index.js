@@ -16,11 +16,11 @@ router.use("/auth", authRouter);
 router.use(verifyJWT);
 
 router.use("/usuarios", usuarioRouter);
-router.use("/tipos-usuario", tipoUsuarioRouter);
+router.use("/tipoUsuarios", tipoUsuarioRouter);
 router.use("/huespedes", huespedRouter);
 router.use("/reservas", reservaRouter);
 router.use("/habitaciones", habitacionRouter);
-router.use("/tipos-habitacion", tipoHabitacionRouter);
-router.use("/estados-habitacion", estadoHabitacionRouter);
+router.use("/tipoHabitaciones", tipoHabitacionRouter);
+router.use("/estadoHabitaciones", estadoHabitacionRouter);
 
 export default router;
