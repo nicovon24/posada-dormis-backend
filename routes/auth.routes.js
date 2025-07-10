@@ -7,19 +7,25 @@ import {
 	register,
 } from "../controllers/auth.controller.js";
 import { auditLogger } from "../middlewares/auditLogger.js";
+import {
+	LOGIN_ATTEMPT,
+	LOGOUT,
+	TOKEN_REFRESH,
+	USER_REGISTER,
+} from "../constants/index.js";
 
 const router = express.Router();
 
 //login
-router.post("/login", loginLimiter, auditLogger("LOGIN_ATTEMPT"), login);
+router.post("/login", loginLimiter, auditLogger(LOGIN_ATTEMPT), login);
 
 //refresh
-router.post("/refresh", auditLogger("TOKEN_REFRESH"), refresh);
+router.post("/refresh", auditLogger(TOKEN_REFRESH), refresh);
 
 //logout
-router.post("/logout", auditLogger("LOGOUT"), logout);
+router.post("/logout", auditLogger(LOGOUT), logout);
 
 //register
-router.post("/register", auditLogger("USER_REGISTER"), register);
+router.post("/register", auditLogger(USER_REGISTER), register);
 
 export default router;

@@ -8,6 +8,7 @@ import {
 	deleteHabitacion,
 } from "../controllers/index.js";
 import { auditLogger } from "../middlewares/auditLogger.js";
+import { CREATE_ROOM, DELETE_ROOM, UPDATE_ROOM } from "../constants/index.js";
 
 const router = Router();
 
@@ -15,12 +16,12 @@ router.get("/", getAllHabitaciones);
 router.get("/:id", getHabitacionById);
 
 // Crear habitación
-router.post("/", auditLogger("CREATE_ROOM"), createHabitacion);
+router.post("/", auditLogger(CREATE_ROOM), createHabitacion);
 
 // Actualizar habitación →
-router.put("/:id", auditLogger("UPDATE_ROOM"), updateHabitacion);
+router.put("/:id", auditLogger(UPDATE_ROOM), updateHabitacion);
 
 // Eliminar habitación
-router.delete("/:id", auditLogger("DELETE_ROOM"), deleteHabitacion);
+router.delete("/:id", auditLogger(DELETE_ROOM), deleteHabitacion);
 
 export default router;

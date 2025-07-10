@@ -7,6 +7,6 @@ const router = Router();
 
 router.use(verifyJWT);
 
-router.get("/", auditLogger("LIST_TIPOS_USUARIO"), getAllTiposUsuario);
+router.get("/",  getAllTiposUsuario);
 
 export default router;
