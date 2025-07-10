@@ -4,9 +4,12 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { sequelize } from "./db.js";
 import routes from "./routes/index.js";
+import morgan from "morgan";
 
 dotenv.config();
 const app = express();
+
+app.use(morgan("combined"));
 
 app.use(
 	cors({

@@ -1,20 +1,24 @@
-// src/routes/usuario.js
 import { Router } from "express";
-import { Usuario } from "../models/usuario.js";
+import {
+	getAllUsuarios,
+	deleteUsuario,
+} from "../controllers/usuario.controller.js";
+import { auditLogger } from "../middlewares/auditLogger.js";
+import { verifyJWT } from "../middlewares/verifyJWT.js";
+
+// Constantes para acciones de auditoría
+const LIST_USUARIOS = "LIST_USUARIOS";
+const DELETE_USUARIO = "DELETE_USUARIO";
+
 const router = Router();
 
-// GET /usuarios
-router.get("/", async (req, res) => {
-	const lista = await Usuario.findAll();
-	res.json(lista);
-});
+// Aseguramos que req.user esté poblado antes de auditar
+router.use(verifyJWT);
 
-// DELETE /usuarios/:id
-router.delete("/:id", async (req, res) => {
-	const u = await Usuario.findByPk(req.params.id);
-	if (!u) return res.status(404).json({ error: "No existe usuario" });
-	await u.destroy();
-	res.status(204).end();
-});
+// Listar usuarios → registra auditoría LIST_USUARIOS
+router.get("/", auditLogger(LIST_USUARIOS), getAllUsuarios);
+
+// Eliminar usuario → registra auditoría DELETE_USUARIO
+router.delete("/:id", auditLogger(DELETE_USUARIO), deleteUsuario);
 
 export default router;
