@@ -14,7 +14,6 @@ export function verifyJWT(req, res, next) {
 	try {
 		const decoded = jwt.verify(token, ACCESS_SECRET);
 		req.user = decoded; // make userId available in the route
-		console.log(req.user);
 
 		next();
 	} catch (err) {
