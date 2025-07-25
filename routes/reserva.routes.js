@@ -20,7 +20,7 @@ const router = Router();
 router.use(verifyJWT);
 
 // Listar reservas
-router.get("/", auditLogger("listar reservas"), getAllReservas);
+router.get("/", getAllReservas);
 
 // Calendario de días completamente ocupados
 router.get(

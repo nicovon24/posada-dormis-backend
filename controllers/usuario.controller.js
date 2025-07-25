@@ -5,7 +5,9 @@ import { Usuario } from "../models/usuario.js";
  */
 export const getAllUsuarios = async (req, res, next) => {
 	try {
-		const lista = await Usuario.findAll();
+		const lista = await Usuario.findAll({
+			attributes: { exclude: ["clave"] },
+		});
 		return res.json(lista);
 	} catch (err) {
 		console.error("Error al obtener usuarios:", err);

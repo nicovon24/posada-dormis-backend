@@ -7,6 +7,7 @@ import habitacionRouter from "./habitacion.routes.js";
 import tipoHabitacionRouter from "./tipoHabitacion.routes.js";
 import estadoHabitacionRouter from "./estadoHabitacion.routes.js";
 import authRouter from "./auth.routes.js";
+import auditoriasRouter from "./auditoria.routes.js";
 import { verifyJWT } from "../middlewares/verifyJWT.js";
 
 const router = express.Router();
@@ -20,7 +21,8 @@ router.use("/tipoUsuarios", tipoUsuarioRouter);
 router.use("/huespedes", huespedRouter);
 router.use("/reservas", reservaRouter);
 router.use("/habitaciones", habitacionRouter);
-router.use("/tipoHabitaciones", tipoHabitacionRouter);
-router.use("/estadoHabitaciones", estadoHabitacionRouter);
+router.use("/tipoHabitacion", tipoHabitacionRouter);
+router.use("/estadoHabitacion", estadoHabitacionRouter);
+router.use("/auditorias", auditoriasRouter);
 
 export default router;

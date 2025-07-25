@@ -22,3 +22,26 @@ export const getTipoHabitacionById = async (req, res, next) => {
 		next(err);
 	}
 };
+
+/**
+ * Crea un nuevo tipo de habitación
+ */
+export const createTipoHabitacion = async (req, res, next) => {
+	try {
+		const { tipo, precio } = req.body;
+
+		if (!tipo || precio == null) {
+			return res.status(400).json({ error: "Tipo y precio son obligatorios" });
+		}
+
+		const nuevoTipo = await TipoHabitacion.create({
+			tipo,
+			precio,
+		});
+
+		res.status(201).json(nuevoTipo);
+	} catch (err) {
+		console.error("Error al crear tipo de habitación:", err);
+		next(err);
+	}
+};

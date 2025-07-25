@@ -361,7 +361,7 @@
                   "fechaHasta": {
                     "example": "any"
                   },
-                  "montoSenia": {
+                  "montoPagado": {
                     "example": "any"
                   },
                   "montoTotal": {

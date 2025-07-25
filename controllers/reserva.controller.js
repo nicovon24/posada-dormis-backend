@@ -3,6 +3,7 @@ import { Habitacion } from "../models/habitacion.js";
 import { Huesped } from "../models/huesped.js";
 import { sequelize } from "../db.js";
 import { QueryTypes } from "sequelize";
+import { TipoHabitacion } from "../models/tipoHabitacion.js";
 
 export const getAllReservas = async (req, res, next) => {
 	try {
@@ -63,8 +64,7 @@ export const createReserva = async (req, res, next) => {
 		idEstadoReserva,
 		fechaDesde,
 		fechaHasta,
-		montoSenia,
-		montoTotal,
+		montoPagado,
 	} = req.body;
 
 	try {
@@ -100,35 +100,62 @@ export const createReserva = async (req, res, next) => {
 			}
 		}
 
-		// 2) Validar habitación
-		const habitacion = await Habitacion.findByPk(idHabitacion);
+		// 2) Validar habitación y obtener precio desde TipoHabitacion
+		const habitacion = await Habitacion.findByPk(idHabitacion, {
+			include: [{ model: TipoHabitacion, attributes: ["precio"] }],
+		});
+
 		if (!habitacion) {
 			return res.status(400).json({ error: "Habitación no válida" });
 		}
 
-		// 3) Crear reserva
+		const precioPorNoche = habitacion.TipoHabitacion.precio;
+
+		// 3) Calcular montoTotal (precio x días)
+		const dias = Math.ceil(
+			(new Date(fechaHasta) - new Date(fechaDesde)) / (1000 * 60 * 60 * 24)
+		);
+
+		if (dias <= 0) {
+			return res.status(400).json({ error: "Rango de fechas inválido" });
+		}
+
+		const montoTotal = precioPorNoche * dias;
+
+		// 4) Validar montoPagado
+		if (montoPagado > montoTotal) {
+			return res
+				.status(400)
+				.json({ error: "La seña no puede ser mayor al monto total" });
+		}
+
+		// 5) Crear reserva
 		const nuevaReserva = await Reserva.create({
 			idHuesped,
 			idHabitacion,
 			idEstadoReserva,
 			fechaDesde,
 			fechaHasta,
-			montoSenia,
+			montoPagado,
 			montoTotal,
 		});
 
-		// 4) Devolver sólo campos necesarios
+		// 6) Devolver datos
 		const reservaCompleta = await Reserva.findByPk(nuevaReserva.idReserva, {
 			attributes: [
 				"idReserva",
 				"fechaDesde",
 				"fechaHasta",
-				"montoSenia",
+				"montoPagado",
 				"montoTotal",
 			],
 			include: [
 				{ model: Huesped, attributes: ["dni", "telefono", "email", "origen"] },
-				{ model: Habitacion, attributes: ["numero"] },
+				{
+					model: Habitacion,
+					attributes: ["numero"],
+					include: [{ model: TipoHabitacion, attributes: ["precio"] }],
+				},
 			],
 		});
 

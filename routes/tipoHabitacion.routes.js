@@ -2,8 +2,8 @@ import { Router } from "express";
 import { auditLogger } from "../middlewares/auditLogger.js";
 import { verifyJWT } from "../middlewares/verifyJWT.js";
 import {
+	createTipoHabitacion,
 	getAllTipoHabitaciones,
-	getTipoHabitacionById,
 } from "../controllers/index.js";
 import { CREATE_TYPE_ROOM } from "../constants/auditTypes.js";
 
@@ -14,6 +14,6 @@ router.use(verifyJWT);
 
 router.get("/", getAllTipoHabitaciones);
 
-router.post("/", auditLogger(CREATE_TYPE_ROOM), getTipoHabitacionById);
+router.post("/", auditLogger(CREATE_TYPE_ROOM), createTipoHabitacion);
 
 export default router;

@@ -7,12 +7,7 @@ import {
 	register,
 } from "../controllers/auth.controller.js";
 import { auditLogger } from "../middlewares/auditLogger.js";
-import {
-	LOGIN_ATTEMPT,
-	LOGOUT,
-	TOKEN_REFRESH,
-	USER_REGISTER,
-} from "../constants/index.js";
+import { LOGIN_ATTEMPT, LOGOUT, USER_REGISTER } from "../constants/index.js";
 
 const router = express.Router();
 
@@ -20,7 +15,7 @@ const router = express.Router();
 router.post("/login", loginLimiter, auditLogger(LOGIN_ATTEMPT), login);
 
 //refresh
-router.post("/refresh", auditLogger(TOKEN_REFRESH), refresh);
+router.post("/refresh", refresh);
 
 //logout
 router.post("/logout", auditLogger(LOGOUT), logout);

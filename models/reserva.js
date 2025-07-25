@@ -33,7 +33,7 @@ export const Reserva = sequelize.define(
 			type: DataTypes.DATE,
 			allowNull: false,
 		},
-		montoSenia: {
+		montoPagado: {
 			type: DataTypes.FLOAT,
 			allowNull: false,
 		},
