@@ -2,7 +2,6 @@
 import { Router } from "express";
 import {
 	getAllHabitaciones,
-	getHabitacionById,
 	createHabitacion,
 	updateHabitacion,
 	deleteHabitacion,
@@ -13,7 +12,6 @@ import { CREATE_ROOM, DELETE_ROOM, UPDATE_ROOM } from "../constants/index.js";
 const router = Router();
 
 router.get("/", getAllHabitaciones);
-router.get("/:id", getHabitacionById);
 
 // Crear habitación
 router.post("/", auditLogger(CREATE_ROOM), createHabitacion);

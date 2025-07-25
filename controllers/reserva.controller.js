@@ -10,7 +10,20 @@ export const getAllReservas = async (req, res, next) => {
 		const list = await Reserva.findAll({
 			include: ["Huesped", "Habitacion"],
 		});
-		return res.json(list);
+
+		const reservasFormateadas = list.map((r) => ({
+			id: r.idReserva,
+			numeroHab: r.Habitacion?.numero ?? "-",
+			ingreso: r.fechaDesde ? new Date(r.fechaDesde).toLocaleDateString() : "-",
+			egreso: r.fechaHasta ? new Date(r.fechaHasta).toLocaleDateString() : "-",
+			huespedNombre: r.Huesped ? `${r.Huesped.nombre} ${r.Huesped.apellido}` : "-",
+			telefonoHuesped: r.Huesped?.telefono ?? "-",
+			montoPagado: r.montoPagado,
+			total: r.montoTotal,
+			estadoDeReserva: r.idEstadoReserva,
+		}));
+
+		return res.json(reservasFormateadas);
 	} catch (err) {
 		console.error("Error al obtener reservas:", err);
 		return next(err);

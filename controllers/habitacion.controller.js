@@ -7,22 +7,19 @@ export const getAllHabitaciones = async (req, res, next) => {
 		const lista = await Habitacion.findAll({
 			include: ["TipoHabitacion", "EstadoHabitacion"],
 		});
-		res.json(lista);
+
+		const formattedData = lista.map((h) => ({
+			idHabitacion: h.idHabitacion,
+			numero: h.numero,
+			precio: h.TipoHabitacion?.precio || null,
+			habilitada: h.habilitada,
+			tipo: h.TipoHabitacion?.tipo || null,
+			estado: h.EstadoHabitacion?.estado || null,
+		}));
+
+		res.json(formattedData);
 	} catch (err) {
 		console.error("Error fetching habitaciones:", err);
-		next(err);
-	}
-};
-
-export const getHabitacionById = async (req, res, next) => {
-	try {
-		const h = await Habitacion.findByPk(req.params.id, {
-			include: ["TipoHabitacion", "EstadoHabitacion"],
-		});
-		if (!h) return res.status(404).json({ error: "No existe habitación" });
-		res.json(h);
-	} catch (err) {
-		console.error(`Error fetching habitación ${req.params.id}:`, err);
 		next(err);
 	}
 };
