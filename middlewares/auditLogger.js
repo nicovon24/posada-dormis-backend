@@ -19,7 +19,7 @@ function sanitize(obj) {
 }
 
 export const auditLogger = (action) => (req, res, next) => {
-	const usuarioId = req.user?.userId ?? null;
+	const idUsuario = req?.user?.userId ?? null;
 
 	res.on("finish", async () => {
 		try {
@@ -27,7 +27,7 @@ export const auditLogger = (action) => (req, res, next) => {
 			const safeParams = sanitize(req.params);
 
 			await Auditoria.create({
-				usuarioId,
+				idUsuario,
 				ruta: req.originalUrl,
 				metodo: req.method,
 				accion: action,

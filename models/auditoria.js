@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../db.js";
+import { Usuario } from "./usuario.js";
 
 export const Auditoria = sequelize.define(
 	"Auditoria",
@@ -9,7 +10,7 @@ export const Auditoria = sequelize.define(
 			primaryKey: true,
 			autoIncrement: true,
 		},
-		usuarioId: {
+		idUsuario: {
 			type: DataTypes.INTEGER,
 			allowNull: true,
 		},
@@ -44,3 +45,7 @@ export const Auditoria = sequelize.define(
 		timestamps: false,
 	}
 );
+
+Auditoria.belongsTo(Usuario, { foreignKey: "idUsuario" });
+
+Usuario.hasMany(Auditoria, { foreignKey: "idUsuario" });
