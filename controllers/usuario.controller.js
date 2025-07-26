@@ -1,20 +1,54 @@
+import { Op } from "sequelize";
 import { Usuario } from "../models/usuario.js";
 
 /**
  * GET /usuarios
  */
+
 export const getAllUsuarios = async (req, res, next) => {
 	try {
-		const lista = await Usuario.findAll({
+		const page = parseInt(req.query.page, 10) || 1;
+		const size = parseInt(req.query.size, 10) || 10;
+		const search = req.query.search || "";
+
+		// Campos de ordenamiento
+		const sortField = req.query.sortField || "idUsuario";
+		const sortOrder =
+			req.query.sortOrder?.toUpperCase() === "DESC" ? "DESC" : "ASC";
+
+		const limit = size;
+		const offset = (page - 1) * size;
+
+		const whereCondition = search
+			? {
+					[Op.or]: [
+						{ nombre: { [Op.iLike]: `%${search}%` } },
+						{ email: { [Op.iLike]: `%${search}%` } },
+					],
+			  }
+			: {};
+
+		const { count, rows } = await Usuario.findAndCountAll({
+			where: whereCondition,
+			limit,
+			offset,
 			attributes: { exclude: ["clave"] },
+			order: [[sortField, sortOrder]], // <- orden dinámico
 		});
-		return res.json(lista);
+
+		res.json({
+			total: count,
+			page,
+			pageSize: size,
+			data: rows,
+			sortField,
+			sortOrder,
+		});
 	} catch (err) {
 		console.error("Error al obtener usuarios:", err);
-		return next(err);
+		next(err);
 	}
 };
-
 /**
  * DELETE /usuarios/:id
  */
