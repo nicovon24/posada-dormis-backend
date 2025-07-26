@@ -17,7 +17,9 @@ export function verifyJWT(req, res, next) {
 
 		next();
 	} catch (err) {
-		console.error("Token verification failed:", err);
-		return res.status(403).json({ error: "Invalid or expired token" });
+		console.error("Verificación de token fallido:", err);
+		return res.status(403).json({
+			error: "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.",
+		});
 	}
 }

@@ -22,6 +22,6 @@ router.post("/refresh", refresh);
 router.post("/register", auditLogger(USER_REGISTER), register);
 
 //logout
-router.post("/logout", verifyJWT, auditLogger(LOGOUT), logout);
+router.post("/logout", auditLogger(LOGOUT), logout);
 
 export default router;
