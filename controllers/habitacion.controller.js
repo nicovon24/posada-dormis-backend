@@ -1,25 +1,63 @@
 import { Habitacion } from "../models/habitacion.js";
 import { TipoHabitacion } from "../models/tipoHabitacion.js";
 import { EstadoHabitacion } from "../models/estadoHabitacion.js";
+import { Op, Sequelize } from "sequelize";
 
 export const getAllHabitaciones = async (req, res, next) => {
 	try {
-		const lista = await Habitacion.findAll({
+		const page = parseInt(req.query.page) || 1;
+		const size = parseInt(req.query.size) || 10;
+		const sortField = req.query.sortField || "numero";
+		const sortOrder =
+			req.query.sortOrder?.toUpperCase() === "DESC" ? "DESC" : "ASC";
+		const search = req.query.search?.trim().toLowerCase() || "";
+
+		const limit = size;
+		const offset = (page - 1) * size;
+
+		const isNumericSearch = !isNaN(Number(search));
+
+		const whereCondition = search
+			? {
+					[Op.or]: [
+						isNumericSearch ? { numero: Number(search) } : null,
+						Sequelize.where(Sequelize.col("TipoHabitacion.tipo"), {
+							[Op.iLike]: `%${search}%`,
+						}),
+						Sequelize.where(Sequelize.col("EstadoHabitacion.estado"), {
+							[Op.iLike]: `%${search}%`,
+						}),
+					].filter(Boolean), // elimina los null
+			  }
+			: {};
+
+		const { rows, count } = await Habitacion.findAndCountAll({
 			include: ["TipoHabitacion", "EstadoHabitacion"],
+			where: whereCondition,
+			order: [[sortField, sortOrder]],
+			limit: limit,
+			offset,
 		});
 
-		const formattedData = lista.map((h) => ({
+		const formattedData = rows.map((h) => ({
 			idHabitacion: h.idHabitacion,
 			numero: h.numero,
-			precio: h.TipoHabitacion?.precio || null,
+			precio: h.TipoHabitacion?.precio ?? null,
 			habilitada: h.habilitada,
-			tipo: h.TipoHabitacion?.tipo || null,
-			estado: h.EstadoHabitacion?.estado || null,
+			tipo: h.TipoHabitacion?.tipo ?? null,
+			estado: h.EstadoHabitacion?.estado ?? null,
 		}));
 
-		res.json(formattedData);
+		res.json({
+			total: count,
+			page,
+			pageSize: size,
+			data: formattedData,
+			sortField,
+			sortOrder,
+		});
 	} catch (err) {
-		console.error("Error fetching habitaciones:", err);
+		console.error("Error fcapaz etching habitaciones:", err);
 		next(err);
 	}
 };
