@@ -27,15 +27,32 @@ export const getAllHabitaciones = async (req, res, next) => {
 						Sequelize.where(Sequelize.col("EstadoHabitacion.estado"), {
 							[Op.iLike]: `%${search}%`,
 						}),
-					].filter(Boolean), // elimina los null
+					].filter(Boolean),
 			  }
 			: {};
 
+		// 🧠 Ordenamiento dinámico para relaciones
+		let order;
+		if (["tipo", "precio"].includes(sortField)) {
+			order = [
+				[{ model: TipoHabitacion, as: "TipoHabitacion" }, sortField, sortOrder],
+			];
+		} else if (sortField === "estado") {
+			order = [
+				[{ model: EstadoHabitacion, as: "EstadoHabitacion" }, "estado", sortOrder],
+			];
+		} else {
+			order = [[sortField, sortOrder]];
+		}
+
 		const { rows, count } = await Habitacion.findAndCountAll({
-			include: ["TipoHabitacion", "EstadoHabitacion"],
+			include: [
+				{ model: TipoHabitacion, as: "TipoHabitacion" },
+				{ model: EstadoHabitacion, as: "EstadoHabitacion" },
+			],
 			where: whereCondition,
-			order: [[sortField, sortOrder]],
-			limit: limit,
+			order,
+			limit,
 			offset,
 		});
 
@@ -57,7 +74,7 @@ export const getAllHabitaciones = async (req, res, next) => {
 			sortOrder,
 		});
 	} catch (err) {
-		console.error("Error fcapaz etching habitaciones:", err);
+		console.error("Error fetching habitaciones:", err);
 		next(err);
 	}
 };
