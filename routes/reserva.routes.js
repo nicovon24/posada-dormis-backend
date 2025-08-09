@@ -23,11 +23,7 @@ router.use(verifyJWT);
 router.get("/", getAllReservas);
 
 // Calendario de días completamente ocupados
-router.get(
-	"/calendar",
-	auditLogger("ver calendario reservas"),
-	getReservasCalendar
-);
+router.get("/calendar", getReservasCalendar);
 
 // Crear reserva
 router.post("/", auditLogger(CREATE_RESERVATION), createReserva);
