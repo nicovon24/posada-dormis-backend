@@ -18,6 +18,8 @@ export const getAllReservas = async (req, res, next) => {
 			egreso: r.fechaHasta ? new Date(r.fechaHasta).toLocaleDateString() : "-",
 			huespedNombre: r.Huesped ? `${r.Huesped.nombre} ${r.Huesped.apellido}` : "-",
 			telefonoHuesped: r.Huesped?.telefono ?? "-",
+			dniHuesped: r.Huesped?.dni ?? "-",     
+			emailHuesped: r.Huesped?.email ?? "-", 
 			montoPagado: r.montoPagado,
 			total: r.montoTotal,
 			estadoDeReserva: r.idEstadoReserva,
