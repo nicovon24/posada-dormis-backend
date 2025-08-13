@@ -1,7 +1,8 @@
 import { Habitacion } from "../models/habitacion.js";
 import { TipoHabitacion } from "../models/tipoHabitacion.js";
 import { EstadoHabitacion } from "../models/estadoHabitacion.js";
-import { Op, Sequelize } from "sequelize";
+import { Op, QueryTypes, Sequelize } from "sequelize";
+import { sequelize } from "../db.js";
 
 export const getAllHabitaciones = async (req, res, next) => {
 	try {
@@ -77,6 +78,39 @@ export const getAllHabitaciones = async (req, res, next) => {
 		console.error("Error fetching habitaciones:", err);
 		next(err);
 	}
+};
+
+
+
+export const getHabitacionesDisponiblesPorDia = async (req, res, next) => {
+  try {
+    const { date } = req.query; // YYYY-MM-DD
+    if (!date) return res.status(400).json({ error: "Falta 'date' (YYYY-MM-DD)" });
+
+    const sql = `
+      WITH occupied AS (
+        SELECT r."idHabitacion"
+        FROM "Reserva" r
+        WHERE r."fechaDesde"::date <= :day::date
+          AND r."fechaHasta"::date >= :day::date
+        GROUP BY r."idHabitacion"
+      )
+      SELECT h.*
+      FROM "Habitacion" h
+      LEFT JOIN occupied o ON o."idHabitacion" = h."idHabitacion"
+      WHERE o."idHabitacion" IS NULL
+      ORDER BY h."idHabitacion";
+    `;
+    const rooms = await sequelize.query(sql, {
+      replacements: { day: date },
+      type: QueryTypes.SELECT,
+    });
+
+    res.json({ date, rooms });
+  } catch (err) {
+    console.error("Error al obtener habitaciones disponibles:", err);
+    next(err);
+  }
 };
 
 export const createHabitacion = async (req, res, next) => {
