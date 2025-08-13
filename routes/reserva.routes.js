@@ -29,7 +29,9 @@ router.get("/calendar", getReservasCalendar);
 router.post("/", auditLogger(CREATE_RESERVATION), createReserva);
 
 // Actualizar reserva
-router.put("/:id", auditLogger(UPDATE_RESERVATION, updateReserva));
+// Actualizar reserva
+router.put("/:id", auditLogger(UPDATE_RESERVATION), updateReserva);
+
 
 // Eliminar reserva
 router.delete("/:id", auditLogger(DELETE_RESERVATION), deleteReserva);
