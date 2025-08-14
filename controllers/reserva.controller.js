@@ -2,7 +2,7 @@ import { Reserva } from "../models/reserva.js";
 import { Habitacion } from "../models/habitacion.js";
 import { Huesped } from "../models/huesped.js";
 import { sequelize } from "../db.js";
-import { QueryTypes } from "sequelize";
+import { Op, QueryTypes } from "sequelize";
 import { TipoHabitacion } from "../models/tipoHabitacion.js";
 
 export const getAllReservas = async (req, res, next) => {
@@ -18,8 +18,8 @@ export const getAllReservas = async (req, res, next) => {
 			egreso: r.fechaHasta ? new Date(r.fechaHasta).toLocaleDateString() : "-",
 			huespedNombre: r.Huesped ? `${r.Huesped.nombre} ${r.Huesped.apellido}` : "-",
 			telefonoHuesped: r.Huesped?.telefono ?? "-",
-			dniHuesped: r.Huesped?.dni ?? "-",     
-			emailHuesped: r.Huesped?.email ?? "-", 
+			dniHuesped: r.Huesped?.dni ?? "-",
+			emailHuesped: r.Huesped?.email ?? "-",
 			montoPagado: r.montoPagado,
 			total: r.montoTotal,
 			estadoDeReserva: r.idEstadoReserva,
@@ -36,40 +36,98 @@ export const getReservasCalendar = async (req, res, next) => {
 	try {
 		const today = new Date();
 		const startDate = new Date(today.getFullYear(), today.getMonth(), 1)
-			.toISOString()
-			.slice(0, 10);
+			.toISOString().slice(0, 10);
 		const endDate = new Date(today.getFullYear(), today.getMonth() + 4, 0)
-			.toISOString()
-			.slice(0, 10);
+			.toISOString().slice(0, 10);
 
-		const sql = `
+		// ---- parseo robusto de IDs ----
+		const parseIds = (val) => {
+			if (!val) return [];
+			if (Array.isArray(val)) {
+				return val.flatMap(v => String(v).split(","))
+					.map(v => Number(v))
+					.filter(Number.isFinite);
+			}
+			if (typeof val === "string") {
+				return val.split(",").map(v => Number(v)).filter(Number.isFinite);
+			}
+			if (typeof val === "number" && Number.isFinite(val)) return [val];
+			return [];
+		};
+
+		const ids = Array.from(new Set([
+			...parseIds(req?.query?.habitacionesIds),
+			...parseIds(req?.query?.roomIds),
+			...parseIds(req?.query?.rooms),
+			...parseIds(req?.body?.habitacionesIds),
+			...parseIds(req?.body?.roomIds),
+			...parseIds(req?.body?.rooms),
+		]));
+
+		const usarFiltro = ids.length > 0;
+
+		// ---- 1) contar habitaciones del universo a evaluar (raw SQL) ----
+		const countSql = `
+      SELECT COUNT(*)::int AS total
+      FROM "Habitacion"
+      ${usarFiltro ? 'WHERE "Habitacion"."idHabitacion" IN (:ids)' : ''};
+    `;
+		const countRows = await sequelize.query(countSql, {
+			type: QueryTypes.SELECT,
+			replacements: usarFiltro ? { ids } : {},
+			// logging: console.log,
+		});
+		const totalSubset = countRows?.[0]?.total ?? 0;
+
+		// Si no hay habitaciones en el subset, no puede haber días completos
+		if (!totalSubset) {
+			return res.json({ fullyBookedDates: [] });
+		}
+
+		// ---- 2) query de calendario (raw SQL) ----
+		const filtroHabitaciones = usarFiltro ? 'AND r."idHabitacion" IN (:ids)' : '';
+
+		console.log(filtroHabitaciones);
+
+		const calendarSql = `
       SELECT to_char(d.day, 'YYYY-MM-DD') AS date
-      FROM generate_series(
-        :startDate::date,
-        :endDate::date,
-        '1 day'
-      ) AS d(day)
+      FROM generate_series(:startDate::date, :endDate::date, '1 day') AS d(day)
       LEFT JOIN "Reserva" r
         ON r."fechaDesde" < (:endDate::date + INTERVAL '1 day')
-       AND r."fechaHasta"   > :startDate::date
+       AND r."fechaHasta" > :startDate::date
        AND d.day BETWEEN date_trunc('day', r."fechaDesde") AND date_trunc('day', r."fechaHasta")
+       ${filtroHabitaciones}
       GROUP BY d.day
-      HAVING count(DISTINCT r."idHabitacion") = (
-        SELECT count(*) FROM "Habitacion"
-      )
+      HAVING COUNT(DISTINCT r."idHabitacion") = :totalSubset
       ORDER BY d.day;
     `;
-		const rows = await sequelize.query(sql, {
-			replacements: { startDate, endDate },
+
+		const rows = await sequelize.query(calendarSql, {
 			type: QueryTypes.SELECT,
+			replacements: {
+				startDate,
+				endDate,
+				totalSubset,
+				...(usarFiltro ? { ids } : {}),
+			},
+			// logging: console.log,
 		});
-		const fullyBookedDates = rows.map((r) => r.date);
+
+		const fullyBookedDates = rows.map(r => r.date);
 		return res.json({ fullyBookedDates });
 	} catch (err) {
-		console.error("Error al calcular calendario:", err);
+		console.error("Error al calcular calendario:", {
+			message: err?.message,
+			detail: err?.original?.detail || err?.parent?.detail,
+			sql: err?.sql,
+			parameters: err?.parameters,
+			stack: err?.stack,
+		});
 		return next(err);
 	}
 };
+
+
 
 export const createReserva = async (req, res, next) => {
 	let {
