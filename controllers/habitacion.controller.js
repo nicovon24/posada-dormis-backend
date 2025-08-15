@@ -1,27 +1,116 @@
 import { Habitacion } from "../models/habitacion.js";
 import { TipoHabitacion } from "../models/tipoHabitacion.js";
 import { EstadoHabitacion } from "../models/estadoHabitacion.js";
+import { Op, QueryTypes, Sequelize } from "sequelize";
+import { sequelize } from "../db.js";
 
 export const getAllHabitaciones = async (req, res, next) => {
 	try {
-		const lista = await Habitacion.findAll({
-			include: ["TipoHabitacion", "EstadoHabitacion"],
+		const page = parseInt(req.query.page) || 1;
+		const size = parseInt(req.query.size) || 10;
+		const sortField = req.query.sortField || "numero";
+		const sortOrder =
+			req.query.sortOrder?.toUpperCase() === "DESC" ? "DESC" : "ASC";
+		const search = req.query.search?.trim().toLowerCase() || "";
+
+		const limit = size;
+		const offset = (page - 1) * size;
+
+		const isNumericSearch = !isNaN(Number(search));
+
+		const whereCondition = search
+			? {
+					[Op.or]: [
+						isNumericSearch ? { numero: Number(search) } : null,
+						Sequelize.where(Sequelize.col("TipoHabitacion.tipo"), {
+							[Op.iLike]: `%${search}%`,
+						}),
+						Sequelize.where(Sequelize.col("EstadoHabitacion.estado"), {
+							[Op.iLike]: `%${search}%`,
+						}),
+					].filter(Boolean),
+			  }
+			: {};
+
+		// 🧠 Ordenamiento dinámico para relaciones
+		let order;
+		if (["tipo", "precio"].includes(sortField)) {
+			order = [
+				[{ model: TipoHabitacion, as: "TipoHabitacion" }, sortField, sortOrder],
+			];
+		} else if (sortField === "estado") {
+			order = [
+				[{ model: EstadoHabitacion, as: "EstadoHabitacion" }, "estado", sortOrder],
+			];
+		} else {
+			order = [[sortField, sortOrder]];
+		}
+
+		const { rows, count } = await Habitacion.findAndCountAll({
+			include: [
+				{ model: TipoHabitacion, as: "TipoHabitacion" },
+				{ model: EstadoHabitacion, as: "EstadoHabitacion" },
+			],
+			where: whereCondition,
+			order,
+			limit,
+			offset,
 		});
 
-		const formattedData = lista.map((h) => ({
+		const formattedData = rows.map((h) => ({
 			idHabitacion: h.idHabitacion,
 			numero: h.numero,
-			precio: h.TipoHabitacion?.precio || null,
+			precio: h.TipoHabitacion?.precio ?? null,
 			habilitada: h.habilitada,
-			tipo: h.TipoHabitacion?.tipo || null,
-			estado: h.EstadoHabitacion?.estado || null,
+			tipo: h.TipoHabitacion?.tipo ?? null,
+			estado: h.EstadoHabitacion?.estado ?? null,
 		}));
 
-		res.json(formattedData);
+		res.json({
+			total: count,
+			page,
+			pageSize: size,
+			data: formattedData,
+			sortField,
+			sortOrder,
+		});
 	} catch (err) {
 		console.error("Error fetching habitaciones:", err);
 		next(err);
 	}
+};
+
+
+
+export const getHabitacionesDisponiblesPorDia = async (req, res, next) => {
+  try {
+    const { date } = req.query; // YYYY-MM-DD
+    if (!date) return res.status(400).json({ error: "Falta 'date' (YYYY-MM-DD)" });
+
+    const sql = `
+      WITH occupied AS (
+        SELECT r."idHabitacion"
+        FROM "Reserva" r
+        WHERE r."fechaDesde"::date <= :day::date
+          AND r."fechaHasta"::date >= :day::date
+        GROUP BY r."idHabitacion"
+      )
+      SELECT h.*
+      FROM "Habitacion" h
+      LEFT JOIN occupied o ON o."idHabitacion" = h."idHabitacion"
+      WHERE o."idHabitacion" IS NULL
+      ORDER BY h."idHabitacion";
+    `;
+    const rooms = await sequelize.query(sql, {
+      replacements: { day: date },
+      type: QueryTypes.SELECT,
+    });
+
+    res.json({ date, rooms });
+  } catch (err) {
+    console.error("Error al obtener habitaciones disponibles:", err);
+    next(err);
+  }
 };
 
 export const createHabitacion = async (req, res, next) => {

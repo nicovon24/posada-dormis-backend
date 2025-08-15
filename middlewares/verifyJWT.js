@@ -6,7 +6,7 @@ export function verifyJWT(req, res, next) {
 	const authHeader = req.headers.authorization;
 
 	if (!authHeader || !authHeader.startsWith("Bearer ")) {
-		return res.status(401).json({ error: "Access token missing or invalid" });
+		return res.status(401).json({ error: "Falta el token de acceso" });
 	}
 
 	const token = authHeader.split(" ")[1];
@@ -17,7 +17,9 @@ export function verifyJWT(req, res, next) {
 
 		next();
 	} catch (err) {
-		console.error("Token verification failed:", err);
-		return res.status(403).json({ error: "Invalid or expired token" });
+		console.error("Verificación de token fallido:", err);
+		return res.status(403).json({
+			error: "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.",
+		});
 	}
 }

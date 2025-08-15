@@ -8,6 +8,7 @@ import tipoHabitacionRouter from "./tipoHabitacion.routes.js";
 import estadoHabitacionRouter from "./estadoHabitacion.routes.js";
 import authRouter from "./auth.routes.js";
 import auditoriasRouter from "./auditoria.routes.js";
+import dashboardRouter from "./dashboard.routes.js";
 import { verifyJWT } from "../middlewares/verifyJWT.js";
 
 const router = express.Router();
@@ -24,5 +25,6 @@ router.use("/habitaciones", habitacionRouter);
 router.use("/tipoHabitacion", tipoHabitacionRouter);
 router.use("/estadoHabitacion", estadoHabitacionRouter);
 router.use("/auditorias", auditoriasRouter);
+router.use("/dashboards", dashboardRouter);
 
 export default router;

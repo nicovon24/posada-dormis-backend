@@ -8,23 +8,14 @@ const REFRESH_SECRET = process.env.JWT_SECRET_REFRESH;
 const EXP_ACCESS = process.env.JWT_EXPIRATION_ACCESS || "15m";
 const EXP_REFRESH = process.env.JWT_EXPIRATION_REFRESH || "1d";
 
-function generateTokens(userId) {
+export function generateTokens(userId) {
 	const accessToken = jwt.sign({ userId }, ACCESS_SECRET, {
 		expiresIn: EXP_ACCESS,
 	});
 	const refreshToken = jwt.sign({ userId }, REFRESH_SECRET, {
 		expiresIn: EXP_REFRESH,
 	});
-
-	const accessExpiresAt = Date.now() + parseTimeToMs(EXP_ACCESS);
-	const refreshExpiresAt = Date.now() + parseTimeToMs(EXP_REFRESH);
-
-	return {
-		accessToken,
-		refreshToken,
-		accessExpiresAt,
-		refreshExpiresAt,
-	};
+	return { accessToken, refreshToken };
 }
 
 export async function login(req, res) {
