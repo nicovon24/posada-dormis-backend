@@ -10,10 +10,6 @@ services:
       npm ci
       npm run build || echo "no build step"
 
-    # Ejecuta migraciones ANTES del deploy/arranque
-    preDeployCommand: |
-      npx sequelize db:migrate || npm run migrate || echo "no migrate step"
-
     startCommand: |
       npm start            # tu app debe escuchar process.env.PORT
 
