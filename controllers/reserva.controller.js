@@ -5,6 +5,13 @@ import { sequelize } from "../db.js";
 import { Op, QueryTypes } from "sequelize";
 import { TipoHabitacion } from "../models/tipoHabitacion.js";
 
+/**
+ * Obtiene todas las reservas con información del huésped y habitación asociada.
+ * 
+ * @route GET /reservas
+ * @returns {Array<Object>} Lista de reservas formateadas con datos de habitación y huésped.
+ */
+
 export const getAllReservas = async (req, res, next) => {
 	try {
 		const list = await Reserva.findAll({
@@ -32,6 +39,14 @@ export const getAllReservas = async (req, res, next) => {
 	}
 };
 
+/**
+ * Obtiene las fechas en las que todas las habitaciones seleccionadas están completamente ocupadas.
+ *
+ * @route GET /reservas/calendar
+ * @query {string|number|Array} [habitacionesIds] IDs de habitaciones a filtrar (puede ser lista separada por comas, número o array).
+ * @returns {Object} Objeto con la propiedad `fullyBookedDates` que contiene un array de strings (YYYY-MM-DD) con las fechas donde todas las habitaciones filtradas están ocupadas.
+ */
+
 export const getReservasCalendar = async (req, res, next) => {
 	try {
 		const today = new Date();
@@ -57,11 +72,6 @@ export const getReservasCalendar = async (req, res, next) => {
 
 		const ids = Array.from(new Set([
 			...parseIds(req?.query?.habitacionesIds),
-			...parseIds(req?.query?.roomIds),
-			...parseIds(req?.query?.rooms),
-			...parseIds(req?.body?.habitacionesIds),
-			...parseIds(req?.body?.roomIds),
-			...parseIds(req?.body?.rooms),
 		]));
 
 		const usarFiltro = ids.length > 0;
@@ -86,8 +96,6 @@ export const getReservasCalendar = async (req, res, next) => {
 
 		// ---- 2) query de calendario (raw SQL) ----
 		const filtroHabitaciones = usarFiltro ? 'AND r."idHabitacion" IN (:ids)' : '';
-
-		console.log(filtroHabitaciones);
 
 		const calendarSql = `
       SELECT to_char(d.day, 'YYYY-MM-DD') AS date
@@ -127,7 +135,19 @@ export const getReservasCalendar = async (req, res, next) => {
 	}
 };
 
-
+/**
+ * Crea una nueva reserva, validando y/o creando huésped y calculando el monto total.
+ * 
+ * @route POST /reservas
+ * @body {number} [idHuesped] ID de huésped existente (si no se envía, se crea uno nuevo con datos en `huesped`).
+ * @body {Object} [huesped] Datos del huésped a crear (dni, telefono, email, origen, nombre, apellido).
+ * @body {number} idHabitacion ID de la habitación.
+ * @body {number} idEstadoReserva ID del estado de la reserva.
+ * @body {string} fechaDesde Fecha de inicio (YYYY-MM-DD).
+ * @body {string} fechaHasta Fecha de fin (YYYY-MM-DD).
+ * @body {number} montoPagado Monto pagado como seña.
+ * @returns {Object} Datos completos de la reserva creada.
+ */
 
 export const createReserva = async (req, res, next) => {
 	let {
@@ -245,6 +265,16 @@ export const createReserva = async (req, res, next) => {
 	}
 };
 
+/**
+ * Actualiza una reserva existente por su ID.
+ * 
+ * @route PUT /reservas/:id
+ * @param {number} id ID de la reserva a actualizar.
+ * @body {Object} Datos a actualizar de la reserva.
+ * @returns {Object} Reserva actualizada.
+ */
+
+
 export const updateReserva = async (req, res, next) => {
 	try {
 		const r = await Reserva.findByPk(req.params.id);
@@ -262,6 +292,14 @@ export const updateReserva = async (req, res, next) => {
 		return next(err);
 	}
 };
+
+/**
+ * Elimina una reserva existente por su ID.
+ * 
+ * @route DELETE /reservas/:id
+ * @param {number} id ID de la reserva a eliminar.
+ * @returns {void} 204 No Content en caso de éxito.
+ */
 
 export const deleteReserva = async (req, res, next) => {
 	try {

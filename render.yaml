@@ -1,0 +1,68 @@
+services:
+  - type: web
+    name: posada-dormis-backend
+    env: node
+    plan: free
+    branch: main
+    autoDeploy: true
+
+    buildCommand: |
+      npm ci
+      npm run build || echo "no build step"
+
+    startCommand: |
+      npm start   # asegúrate que 'npm start' levante tu server (usa process.env.PORT)
+
+    # Si tienes un endpoint de health, ponlo aquí (sino, quítalo)
+    # healthCheckPath: /health
+
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production
+
+      # Render asigna PORT dinámicamente → tu app debe usar process.env.PORT
+      # No seteamos un valor fijo de PORT
+      - key: PORT
+        generateValue: true
+
+      # Conectar a la base de datos de Render (definida abajo)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: posada-db
+          property: connectionString
+
+      # CORS: cambia por tu dominio real del frontend
+      - key: CORS_ORIGIN
+        value: https://tu-frontend.vercel.app
+
+      # === Secrets: cargalos en el panel (no los comitees) ===
+      - key: JWT_SECRET_ACCESS
+        sync: false
+      - key: JWT_SECRET_REFRESH
+        sync: false
+      - key: JWT_EXPIRATION_ACCESS
+        sync: false
+      - key: JWT_EXPIRATION_REFRESH
+        sync: false
+      - key: COOKIE_SECRET
+        sync: false
+      - key: USE_AUTH
+        sync: false
+      # Si tu backend necesita una URL pública, puedes usar RENDER_EXTERNAL_URL en código.
+      # Si insistes en una URL fija, define:
+      # - key: URL
+      #   sync: false
+
+    # Si usas migraciones de Sequelize después de cada deploy:
+    postDeployCommand: |
+      npx sequelize db:migrate || npm run migrate || echo "no migrate step"
+      # Si también tienes seeders:
+      # npx sequelize db:seed:all || npm run seed || echo "no seed step"
+
+databases:
+  - name: posada-db
+    plan: free
+    databaseName: posada
+    user: posada_user
