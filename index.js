@@ -15,6 +15,9 @@ import { fileURLToPath } from "url";
 dotenv.config();
 const app = express();
 
+// si vas a setear cookies secure:true detrás de proxy (Render), habilitá esto
+app.set("trust proxy", 1);
+
 // Resolver __dirname en ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,15 +39,40 @@ if (process.env.NODE_ENV !== "production") {
 	);
 }
 
+/* =========================
+   CORS (whitelist + credentials)
+   ========================= */
+const whitelist = [
+	process.env.CORS_ORIGIN, // ej: https://posada-dormis-frontend.vercel.app (setear en Render)
+	"https://posada-dormis-frontend.vercel.app",
+	"http://localhost:3000",
+].filter(Boolean);
+
 app.use(
 	cors({
-		origin: process.env.CORS_ORIGIN || "http://localhost:3000",
-		credentials: true,
+		origin(origin, callback) {
+			// Permitir requests sin Origin (Postman/cURL) y los de la whitelist
+			if (!origin || whitelist.includes(origin)) {
+				return callback(null, true);
+			}
+			return callback(new Error("Not allowed by CORS"));
+		},
+		credentials: true, // necesario para cookies
+		methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+		allowedHeaders: ["Content-Type", "Authorization"],
+		optionsSuccessStatus: 204,
 	})
 );
+
+// Body & cookies
 app.use(express.json());
 app.use(cookieParser());
+
+// Rutas
 app.use("/api", routes);
+
+// Healthcheck opcional
+app.get("/health", (_req, res) => res.status(200).send("OK"));
 
 const port = Number(process.env.PORT) || 4000;
 sequelize
@@ -54,7 +82,7 @@ sequelize
 		app.listen(port, () => {
 			console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
 			if (process.env.NODE_ENV !== "production") {
-				console.log(`📚 Swagger UI en http://localhost:${port}/api-docs`);
+				console.log(`📚 Swagger UI en http://localhost:${port}/docs`);
 			}
 		});
 	})
