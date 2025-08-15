@@ -8,6 +8,10 @@ const REFRESH_SECRET = process.env.JWT_SECRET_REFRESH;
 const EXP_ACCESS = process.env.JWT_EXPIRATION_ACCESS || "15m";
 const EXP_REFRESH = process.env.JWT_EXPIRATION_REFRESH || "1d";
 
+const IS_PROD = process.env.NODE_ENV === "production";
+const REFRESH_COOKIE_NAME = "refreshToken";
+const REFRESH_COOKIE_PATH = "/api/auth";
+
 export function generateTokens(userId) {
 	const accessToken = jwt.sign({ userId }, ACCESS_SECRET, {
 		expiresIn: EXP_ACCESS,
@@ -31,16 +35,17 @@ export async function login(req, res) {
 			return res.status(401).json({ message: "Credenciales inválidas" });
 		}
 
-		const { refreshToken } = generateTokens(user.idUsuario); // solo se genera refresh
+		const { refreshToken } = generateTokens(user.idUsuario); // solo refresh
 
-		res.cookie("refreshToken", refreshToken, {
+		// *** Cambio clave: SameSite=None en prod + secure; path consistente ***
+		res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "lax",
+			secure: IS_PROD, // requerido con SameSite=None
+			sameSite: IS_PROD ? "None" : "Lax", // Lax en dev, None en prod
+			path: REFRESH_COOKIE_PATH, // igual que en clearCookie
 			maxAge: parseTimeToMs(EXP_REFRESH),
 		});
 
-		// No se devuelve el accessToken acá
 		return res.status(200).json({ message: "Login exitoso" });
 	} catch (err) {
 		console.error("Error en login:", err);
@@ -49,19 +54,19 @@ export async function login(req, res) {
 }
 
 export function refresh(req, res) {
-	const token = req.cookies.refreshToken;
+	const token = req.cookies?.[REFRESH_COOKIE_NAME];
 	if (!token) {
-		return res.status(401).json({ message: "Token de refresco faltante" });
+		// *** Cambio clave: mensaje exactamente como el que ves en prod ***
+		return res.status(401).json({ error: "Falta el token de acceso" });
 	}
 
 	try {
-		const payload = jwt.verify(token, REFRESH_SECRET); // valida que esté vivo
+		const payload = jwt.verify(token, REFRESH_SECRET);
 
 		const accessToken = jwt.sign({ userId: payload.userId }, ACCESS_SECRET, {
 			expiresIn: EXP_ACCESS,
 		});
 
-		// Solo se devuelve el accessToken para guardar en memoria en el front
 		return res.json({ accessToken });
 	} catch (err) {
 		console.error("Error en refresh token:", err);
@@ -70,10 +75,12 @@ export function refresh(req, res) {
 }
 
 export function logout(req, res) {
-	res.clearCookie("refreshToken", {
+	// *** Cambio clave: usar los mismos flags y path que al setearla ***
+	res.clearCookie(REFRESH_COOKIE_NAME, {
 		httpOnly: true,
-		sameSite: "lax",
-		secure: process.env.NODE_ENV === "production",
+		secure: IS_PROD,
+		sameSite: IS_PROD ? "None" : "Lax",
+		path: REFRESH_COOKIE_PATH,
 	});
 	return res.json({ message: "Cierre de sesión exitoso" });
 }
@@ -120,18 +127,15 @@ export async function register(req, res) {
 }
 
 function parseTimeToMs(timeStr) {
-	const match = timeStr.match(/^(\d+)([smhd])$/); // soporta segundos, minutos, horas, días
+	const match = String(timeStr).match(/^(\d+)([smhd])$/); // s|m|h|d
 	if (!match) return null;
-
-	const value = parseInt(match[1]);
+	const value = parseInt(match[1], 10);
 	const unit = match[2];
-
 	const multipliers = {
 		s: 1000,
 		m: 60 * 1000,
 		h: 60 * 60 * 1000,
 		d: 24 * 60 * 60 * 1000,
 	};
-
 	return value * multipliers[unit];
 }
