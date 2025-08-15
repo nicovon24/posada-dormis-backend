@@ -1,0 +1,62 @@
+services:
+  - type: web
+    name: posada-dormis-backend
+    runtime: node          # (reemplaza "env: node"; 'runtime' es el nuevo)
+    plan: free
+    branch: main
+    autoDeploy: true
+
+    buildCommand: |
+      npm ci
+      npm run build || echo "no build step"
+
+    startCommand: |
+      npm start            # tu app debe escuchar process.env.PORT
+
+    # Opcional: si tenés endpoint de health, dejalo;
+    # si no, elimínalo para evitar falsos fallos.
+    # healthCheckPath: /health
+
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production
+
+      # Render inyecta PORT automáticamente → no lo definas fijo
+      # - key: PORT ...  (eliminar)
+
+      # Conectar a la base de datos definida abajo
+      - key: DATABASE_URL
+        fromDatabase:
+          name: posada-db
+          property: connectionString
+
+      # CORS: cambiá por el dominio real de tu frontend
+      - key: CORS_ORIGIN
+        value: https://tu-frontend.vercel.app
+
+      # === Secretos: cargalos en el panel, no en el repo ===
+      - key: JWT_SECRET_ACCESS
+        sync: false
+      - key: JWT_SECRET_REFRESH
+        sync: false
+      - key: JWT_EXPIRATION_ACCESS
+        sync: false
+      - key: JWT_EXPIRATION_REFRESH
+        sync: false
+      - key: PORT
+        sync: false
+      - key: URL
+        sync: false
+      - key: USE_AUTH
+        sync: false
+      # (Opcional) Si necesitas una URL fija:
+      # - key: URL
+      #   sync: false
+
+databases:
+  - name: posada-db
+    plan: free
+    databaseName: posada
+    user: posada_user
