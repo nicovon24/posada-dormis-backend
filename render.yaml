@@ -6,10 +6,6 @@ services:
     branch: main
     autoDeploy: true
 
-    buildCommand: |
-      npm ci
-      npm run build || echo "no build step"
-
     startCommand: |
       npm start            # tu app debe escuchar process.env.PORT
 
