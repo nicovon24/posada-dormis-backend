@@ -45,7 +45,9 @@ services:
         sync: false
       - key: JWT_EXPIRATION_REFRESH
         sync: false
-      - key: COOKIE_SECRET
+      - key: PORT
+        sync: false
+      - key: URL
         sync: false
       - key: USE_AUTH
         sync: false
