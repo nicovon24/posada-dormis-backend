@@ -1,9 +1,9 @@
 import { Habitacion } from "../models/habitacion.js";
 import { TipoHabitacion } from "../models/tipoHabitacion.js";
-import { EstadoHabitacion } from "../models/estadoHabitacion.js";
-import { Op, QueryTypes, Sequelize } from "sequelize";
+import { Op, Sequelize, QueryTypes } from "sequelize";
 import { sequelize } from "../db.js";
 
+// GET /habitaciones
 export const getAllHabitaciones = async (req, res, next) => {
 	try {
 		const page = parseInt(req.query.page) || 1;
@@ -20,37 +20,25 @@ export const getAllHabitaciones = async (req, res, next) => {
 
 		const whereCondition = search
 			? {
-					[Op.or]: [
-						isNumericSearch ? { numero: Number(search) } : null,
-						Sequelize.where(Sequelize.col("TipoHabitacion.tipo"), {
-							[Op.iLike]: `%${search}%`,
-						}),
-						Sequelize.where(Sequelize.col("EstadoHabitacion.estado"), {
-							[Op.iLike]: `%${search}%`,
-						}),
-					].filter(Boolean),
-			  }
+				[Op.or]: [
+					isNumericSearch ? { numero: Number(search) } : null,
+					Sequelize.where(Sequelize.col("TipoHabitacion.nombre"), {
+						[Op.iLike]: `%${search}%`,
+					}),
+				].filter(Boolean),
+			}
 			: {};
 
-		// 🧠 Ordenamiento dinámico para relaciones
+		// Ordenamiento dinámico (solo TipoHabitacion)
 		let order;
-		if (["tipo", "precio"].includes(sortField)) {
-			order = [
-				[{ model: TipoHabitacion, as: "TipoHabitacion" }, sortField, sortOrder],
-			];
-		} else if (sortField === "estado") {
-			order = [
-				[{ model: EstadoHabitacion, as: "EstadoHabitacion" }, "estado", sortOrder],
-			];
+		if (["nombre", "precio"].includes(sortField)) {
+			order = [[{ model: TipoHabitacion, as: "TipoHabitacion" }, sortField, sortOrder]];
 		} else {
 			order = [[sortField, sortOrder]];
 		}
 
 		const { rows, count } = await Habitacion.findAndCountAll({
-			include: [
-				{ model: TipoHabitacion, as: "TipoHabitacion" },
-				{ model: EstadoHabitacion, as: "EstadoHabitacion" },
-			],
+			include: [{ model: TipoHabitacion, as: "TipoHabitacion" }],
 			where: whereCondition,
 			order,
 			limit,
@@ -60,10 +48,10 @@ export const getAllHabitaciones = async (req, res, next) => {
 		const formattedData = rows.map((h) => ({
 			idHabitacion: h.idHabitacion,
 			numero: h.numero,
-			precio: h.TipoHabitacion?.precio ?? null,
+			precio: h.TipoHabitacion?.precio ?? null, // o precioBase si lo cambiaste
 			habilitada: h.habilitada,
-			tipo: h.TipoHabitacion?.tipo ?? null,
-			estado: h.EstadoHabitacion?.estado ?? null,
+			tipo: h.TipoHabitacion?.nombre ?? null,
+			// estado: eliminado
 		}));
 
 		res.json({
@@ -80,14 +68,13 @@ export const getAllHabitaciones = async (req, res, next) => {
 	}
 };
 
-
-
+// GET /habitaciones/disponibles?date=YYYY-MM-DD
 export const getHabitacionesDisponiblesPorDia = async (req, res, next) => {
-  try {
-    const { date } = req.query; // YYYY-MM-DD
-    if (!date) return res.status(400).json({ error: "Falta 'date' (YYYY-MM-DD)" });
+	try {
+		const { date } = req.query; // YYYY-MM-DD
+		if (!date) return res.status(400).json({ error: "Falta 'date' (YYYY-MM-DD)" });
 
-    const sql = `
+		const sql = `
       WITH occupied AS (
         SELECT r."idHabitacion"
         FROM "Reserva" r
@@ -101,32 +88,29 @@ export const getHabitacionesDisponiblesPorDia = async (req, res, next) => {
       WHERE o."idHabitacion" IS NULL
       ORDER BY h."idHabitacion";
     `;
-    const rooms = await sequelize.query(sql, {
-      replacements: { day: date },
-      type: QueryTypes.SELECT,
-    });
+		const rooms = await sequelize.query(sql, {
+			replacements: { day: date },
+			type: QueryTypes.SELECT,
+		});
 
-    res.json({ date, rooms });
-  } catch (err) {
-    console.error("Error al obtener habitaciones disponibles:", err);
-    next(err);
-  }
+		res.json({ date, rooms });
+	} catch (err) {
+		console.error("Error al obtener habitaciones disponibles:", err);
+		next(err);
+	}
 };
 
+// POST /habitaciones
 export const createHabitacion = async (req, res, next) => {
-	const { idTipoHabitacion, idEstadoHabitacion, numero } = req.body;
+	const { idTipoHabitacion, numero } = req.body;
 	try {
-		const tipo = await TipoHabitacion.findByPk(idTipoHabitacion);
-		if (!tipo)
+		const nombre = await TipoHabitacion.findByPk(idTipoHabitacion);
+		if (!nombre) {
 			return res.status(400).json({ error: "Tipo de habitación no válido" });
-
-		const estado = await EstadoHabitacion.findByPk(idEstadoHabitacion);
-		if (!estado)
-			return res.status(400).json({ error: "Estado de habitación no válido" });
+		}
 
 		const nueva = await Habitacion.create({
 			idTipoHabitacion,
-			idEstadoHabitacion,
 			numero,
 		});
 		res.status(201).json(nueva);
@@ -139,24 +123,19 @@ export const createHabitacion = async (req, res, next) => {
 	}
 };
 
+// PUT /habitaciones/:id
 export const updateHabitacion = async (req, res, next) => {
-	const { idTipoHabitacion, idEstadoHabitacion, numero } = req.body;
+	const { idTipoHabitacion, numero } = req.body;
 	try {
 		const h = await Habitacion.findByPk(req.params.id);
 		if (!h) return res.status(404).json({ error: "No existe habitación" });
 
 		if (idTipoHabitacion !== undefined) {
-			const tipo = await TipoHabitacion.findByPk(idTipoHabitacion);
-			if (!tipo)
+			const nombre = await TipoHabitacion.findByPk(idTipoHabitacion);
+			if (!nombre) {
 				return res.status(400).json({ error: "Tipo de habitación no válido" });
+			}
 			h.idTipoHabitacion = idTipoHabitacion;
-		}
-
-		if (idEstadoHabitacion !== undefined) {
-			const estado = await EstadoHabitacion.findByPk(idEstadoHabitacion);
-			if (!estado)
-				return res.status(400).json({ error: "Estado de habitación no válido" });
-			h.idEstadoHabitacion = idEstadoHabitacion;
 		}
 
 		if (numero !== undefined) {
@@ -174,6 +153,7 @@ export const updateHabitacion = async (req, res, next) => {
 	}
 };
 
+// DELETE /habitaciones/:id
 export const deleteHabitacion = async (req, res, next) => {
 	try {
 		const h = await Habitacion.findByPk(req.params.id);

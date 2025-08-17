@@ -5,7 +5,7 @@ import {
 	createTipoHabitacion,
 	getAllTipoHabitaciones,
 } from "../controllers/index.js";
-import { CREATE_TYPE_ROOM } from "../constants/auditTypes.js";
+import { CREATE_TYPE_RESERVATION } from "../constants/auditTypes.js";
 
 const router = Router();
 
@@ -14,6 +14,6 @@ router.use(verifyJWT);
 
 router.get("/", getAllTipoHabitaciones);
 
-router.post("/", auditLogger(CREATE_TYPE_ROOM), createTipoHabitacion);
+router.post("/", auditLogger(CREATE_TYPE_RESERVATION), createTipoHabitacion);
 
 export default router;

@@ -1,7 +1,9 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { Usuario } from "../models/usuario.js";
 import { TipoUsuario } from "../models/index.js";
+import { sendEmail } from "../helpers/mailer.js";
 
 const ACCESS_SECRET = process.env.JWT_SECRET_ACCESS;
 const REFRESH_SECRET = process.env.JWT_SECRET_REFRESH;
@@ -28,6 +30,10 @@ export async function login(req, res) {
 		const user = await Usuario.findOne({ where: { email } });
 		if (!user) {
 			return res.status(401).json({ message: "Credenciales inválidas" });
+		}
+
+		if (!user.verificado) {
+			return res.status(403).json({ message: "Cuenta no verificada" });
 		}
 
 		const isMatch = await bcrypt.compare(clave, user.clave);
@@ -87,7 +93,7 @@ export function logout(req, res) {
 
 export async function register(req, res) {
 	const { nombre, email, clave, tipoUsuario } = req.body;
-	if (!nombre || !email || !clave || !tipoUsuario) {
+	if (!nombre || !email || !tipoUsuario) {
 		return res.status(400).json({ message: "Faltan campos obligatorios" });
 	}
 	try {
@@ -101,13 +107,37 @@ export async function register(req, res) {
 			return res.status(404).json({ message: "Tipo de usuario no encontrado" });
 		}
 
-		const hashed = await bcrypt.hash(clave, 10);
+		const tempPassword = clave || crypto.randomBytes(12).toString("hex");
+		const hashed = await bcrypt.hash(tempPassword, 10);
+
+		const verifyToken = crypto.randomBytes(32).toString("hex");
+		const verifyTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
 		const user = await Usuario.create({
 			nombre,
 			email,
 			clave: hashed,
 			idTipoUsuario: tipo.idTipoUsuario,
+			verificado: false,
+			verifyToken,
+			verifyTokenExpires,
 		});
+
+		// Enviar email de verificación (no bloquear respuesta si falla)
+		try {
+			const appBaseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+			const verifyUrl = `${appBaseUrl}/verificarCuenta?code=${verifyToken}`;
+			await sendEmail({
+				to: email,
+				subject: "Verificá tu cuenta",
+				html: `<p>Hola ${nombre},</p>
+<p>Tu cuenta fue creada por el administrador. Para activarla y establecer tu contraseña, hacé click en el siguiente enlace:</p>
+<p><a href="${verifyUrl}">${verifyUrl}</a></p>
+<p>El enlace vence en 24 horas.</p>`,
+			});
+		} catch (mailErr) {
+			console.error("No se pudo enviar el email de verificación:", mailErr);
+		}
 
 		return res.status(201).json({
 			message: "Usuario creado exitosamente",
@@ -124,6 +154,36 @@ export async function register(req, res) {
 			.status(500)
 			.json({ message: "Error interno al registrar usuario" });
 	}
+}
+
+export async function verifyGet(req, res) {
+	const { code } = req.query;
+	if (!code) return res.status(400).json({ valid: false });
+
+	const user = await Usuario.findOne({ where: { verifyToken: code } });
+	if (!user || !user.verifyTokenExpires || user.verifyTokenExpires < new Date()) {
+		return res.json({ valid: false });
+	}
+	return res.json({ valid: true });
+}
+
+export async function verifyPost(req, res) {
+	const { code, password } = req.body || {};
+	if (!code || !password) return res.status(400).json({ message: "Datos inválidos" });
+
+	const user = await Usuario.findOne({ where: { verifyToken: code } });
+	if (!user || !user.verifyTokenExpires || user.verifyTokenExpires < new Date()) {
+		return res.status(400).json({ message: "Código inválido o vencido" });
+	}
+
+	const hashed = await bcrypt.hash(password, 10);
+	user.clave = hashed;
+	user.verificado = true;
+	user.verifyToken = null;
+	user.verifyTokenExpires = null;
+	await user.save();
+
+	return res.json({ message: "Cuenta verificada" });
 }
 
 function parseTimeToMs(timeStr) {

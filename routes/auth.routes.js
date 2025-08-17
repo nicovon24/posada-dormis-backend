@@ -5,6 +5,8 @@ import {
 	logout,
 	refresh,
 	register,
+	verifyGet,
+	verifyPost,
 } from "../controllers/auth.controller.js";
 import { auditLogger } from "../middlewares/auditLogger.js";
 import { LOGIN_ATTEMPT, LOGOUT, USER_REGISTER } from "../constants/index.js";
@@ -20,6 +22,10 @@ router.post("/refresh", refresh);
 
 //register
 router.post("/register", auditLogger(USER_REGISTER), register);
+
+// verify account
+router.get("/verify", verifyGet);
+router.post("/verify", verifyPost);
 
 //logout
 router.post("/logout", auditLogger(LOGOUT), logout);

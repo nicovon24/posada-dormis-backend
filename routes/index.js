@@ -5,9 +5,9 @@ import huespedRouter from "./huesped.routes.js";
 import reservaRouter from "./reserva.routes.js";
 import habitacionRouter from "./habitacion.routes.js";
 import tipoHabitacionRouter from "./tipoHabitacion.routes.js";
-import estadoHabitacionRouter from "./estadoHabitacion.routes.js";
+import estadoReservaRouter from "./estadoReserva.routes.js";
 import authRouter from "./auth.routes.js";
-import auditoriasRouter from "./auditoria.routes.js";
+import auditoriasRouter from "./Auditoria.routes.js";
 import dashboardRouter from "./dashboard.routes.js";
 import { verifyJWT } from "../middlewares/verifyJWT.js";
 
@@ -23,7 +23,7 @@ router.use("/huespedes", huespedRouter);
 router.use("/reservas", reservaRouter);
 router.use("/habitaciones", habitacionRouter);
 router.use("/tipoHabitacion", tipoHabitacionRouter);
-router.use("/estadoHabitacion", estadoHabitacionRouter);
+router.use("/estadoReserva", estadoReservaRouter);
 router.use("/auditorias", auditoriasRouter);
 router.use("/dashboards", dashboardRouter);
 

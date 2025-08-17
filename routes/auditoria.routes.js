@@ -1,5 +1,5 @@
 import express from "express";
-import { getAllAuditorias } from "../controllers/auditoria.js";
+import { getAllAuditorias } from "../controllers/Auditoria.js";
 
 const router = express.Router();
 

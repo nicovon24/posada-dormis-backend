@@ -28,14 +28,14 @@ export const getTipoHabitacionById = async (req, res, next) => {
  */
 export const createTipoHabitacion = async (req, res, next) => {
 	try {
-		const { tipo, precio } = req.body;
+		const { nombre, precio } = req.body;
 
-		if (!tipo || precio == null) {
-			return res.status(400).json({ error: "Tipo y precio son obligatorios" });
+		if (!nombre || precio == null) {
+			return res.status(400).json({ error: "Nombre y precio son obligatorios" });
 		}
 
 		const nuevoTipo = await TipoHabitacion.create({
-			tipo,
+			nombre,
 			precio,
 		});
 
