@@ -4,18 +4,33 @@ import { TipoUsuario } from "../models/tipoUsuario.js";
 const all = { create: true, read: true, update: true, delete: true };
 
 const sysadminPerms = {
-    usuario: all, tipoHabitacion: all, habitacion: all,
-    reserva: all, huesped: all, estadoReserva: all, auditoria: all,
-};
-
-const adminPerms = {
-    usuario: { create: false, read: true, update: false, delete: false },
+    usuario: all,
     tipoHabitacion: all,
     habitacion: all,
     reserva: all,
     huesped: all,
     estadoReserva: all,
-    auditoria: { create: false, read: true, update: false, delete: false },
+    auditoria: all,
+};
+
+const adminPerms = {
+    usuario: { read: true, create: false, delete: false, update: false },
+    tipoHabitacion: all,
+    habitacion: all,
+    reserva: all,
+    huesped: all,
+    estadoReserva: all,
+    auditoria: { read: true, create: false, delete: false, update: false },
+};
+
+const readerPerms = {
+    usuario: { read: true, create: false, delete: false, update: false },
+    tipoHabitacion: { read: true, create: false, delete: false, update: false },
+    habitacion: { read: true, create: false, delete: false, update: false },
+    reserva: { read: true, create: false, delete: false, update: false },
+    huesped: { read: true, create: false, delete: false, update: false },
+    estadoReserva: { read: true, create: false, delete: false, update: false },
+    auditoria: { read: true, create: false, delete: false, update: false },
 };
 
 export async function ensureDefaultRoles() {
@@ -33,6 +48,13 @@ export async function ensureDefaultRoles() {
             permisos: adminPerms,
             esSistema: true,
             prioridad: 10,
+        },
+        {
+            nombre: "reader",
+            descripcion: "Reader sólo de pruebas",
+            permisos: readerPerms,
+            esSistema: true,
+            prioridad: 100,
         },
     ];
 

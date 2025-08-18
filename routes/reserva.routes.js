@@ -13,27 +13,30 @@ import {
 	DELETE_RESERVATION,
 	UPDATE_RESERVATION,
 } from "../constants/auditTypes.js";
+import { authorize } from "../middlewares/authorize.js";
 
 const router = Router();
 
 // Poblamos req.user antes de auditar
 router.use(verifyJWT);
 
+const tipoModelo = "reserva";
+
 // Listar reservas
-router.get("/", getAllReservas);
+router.get("/", authorize(tipoModelo, "read"), getAllReservas);
 
 // Calendario de días completamente ocupados
-router.get("/calendar", getReservasCalendar);
+router.get("/calendar", authorize(tipoModelo, "read"), getReservasCalendar);
 
 // Crear reserva
-router.post("/", auditLogger(CREATE_RESERVATION), createReserva);
+router.post("/", authorize(tipoModelo, "create"), auditLogger(CREATE_RESERVATION), createReserva);
 
 // Actualizar reserva
 // Actualizar reserva
-router.put("/:id", auditLogger(UPDATE_RESERVATION), updateReserva);
+router.put("/:id", authorize(tipoModelo, "update"), auditLogger(UPDATE_RESERVATION), updateReserva);
 
 
 // Eliminar reserva
-router.delete("/:id", auditLogger(DELETE_RESERVATION), deleteReserva);
+router.delete("/:id", authorize(tipoModelo, "delete"), auditLogger(DELETE_RESERVATION), deleteReserva);
 
 export default router;

@@ -12,6 +12,7 @@ export const EstadoReserva = sequelize.define(
 		nombre: {
 			type: DataTypes.STRING,
 			allowNull: false,
+			unique: true,
 		},
 		descripcion: {
 			type: DataTypes.STRING,

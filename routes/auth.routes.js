@@ -10,7 +10,6 @@ import {
 } from "../controllers/auth.controller.js";
 import { auditLogger } from "../middlewares/auditLogger.js";
 import { LOGIN_ATTEMPT, LOGOUT, USER_REGISTER } from "../constants/index.js";
-import { verifyJWT } from "../middlewares/verifyJWT.js";
 
 const router = express.Router();
 

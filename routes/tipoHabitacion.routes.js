@@ -6,14 +6,17 @@ import {
 	getAllTipoHabitaciones,
 } from "../controllers/index.js";
 import { CREATE_TYPE_RESERVATION } from "../constants/auditTypes.js";
+import { authorize } from "../middlewares/authorize.js";
 
 const router = Router();
+
+const tipoModelo = "tipoHabitacion";
 
 // Asegúrate de tener al usuario en req.user antes de auditar
 router.use(verifyJWT);
 
-router.get("/", getAllTipoHabitaciones);
+router.get("/", authorize(tipoModelo, "read"), getAllTipoHabitaciones);
 
-router.post("/", auditLogger(CREATE_TYPE_RESERVATION), createTipoHabitacion);
+router.post("/", authorize(tipoModelo, "create"), auditLogger(CREATE_TYPE_RESERVATION), createTipoHabitacion);
 
 export default router;

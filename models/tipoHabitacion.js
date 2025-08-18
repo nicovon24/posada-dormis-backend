@@ -13,6 +13,7 @@ export const TipoHabitacion = sequelize.define(
 		nombre: {
 			type: DataTypes.STRING,
 			allowNull: false,
+			unique: true,
 		},
 		precio: {
 			type: DataTypes.FLOAT,
